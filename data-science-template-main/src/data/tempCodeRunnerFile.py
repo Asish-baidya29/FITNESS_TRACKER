@@ -1,1 +1,2 @@
-single_file_gyr
+data_path="../../data/raw/MetaMotion/MetaMotion/"
+f=files[0]
