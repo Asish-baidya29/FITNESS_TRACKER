@@ -1,91 +1,12 @@
 import pandas as pd
 from glob import glob
 
-# --------------------------------------------------------------
-# Read single CSV file
-# --------------------------------------------------------------
 
 single_file_acc = pd.read_csv(r"C:\Users\ASISH\OneDrive\Desktop\New folder\data-science-template-main\data-science-template-main\data\raw\MetaMotion\MetaMotion\A-bench-heavy_MetaWear_2019-01-14T14.22.49.165_C42732BE255C_Accelerometer_12.500Hz_1.4.4.csv")
 single_file_gyr = pd.read_csv(r"C:\Users\ASISH\OneDrive\Desktop\New folder\data-science-template-main\data-science-template-main\data\raw\MetaMotion\MetaMotion\A-bench-heavy_MetaWear_2019-01-14T14.22.49.165_C42732BE255C_Gyroscope_25.000Hz_1.4.4.csv")
 
 # --------------------------------------------------------------
-# List all data in data/raw/MetaMotion
-# --------------------------------------------------------------
-
-files=glob("../../data/raw/MetaMotion/MetaMotion/*.csv")
-len(files)
-
-# --------------------------------------------------------------
-# Extract features from filename
-# --------------------------------------------------------------
-
-data_path="../../data/raw/MetaMotion/MetaMotion/"
-f=files[0]
-
-participant = f.split("-")[0].split("\\")[-1].split("/")[-1]
-lable = f.split("-")[1]
-category = f.split("-")[2].rstrip("123")
-
-df = pd.read_csv(f)
-
-df["participant_name"] =participant
-df["lable"] =lable
-df["category"] =category
-
-df
-
-# --------------------------------------------------------------
-# Read all files
-# --------------------------------------------------------------
-
-acc_df=pd.DataFrame()
-gyr_df=pd.DataFrame()
-
-acc_set=1
-gyr_set=1
-
-for f in files:
-    participant = f.split("-")[0].split("\\")[-1].split("/")[-1]
-    lable = f.split("-")[1]
-    category = f.split("-")[2].rstrip("123").rstrip("_MetaWear_2019")
-    
-    df = pd.read_csv(f)
-    
-    df["participant"] =participant
-    df["lable"] =lable
-    df["category"] =category
-    
-    if "Accelerometer" in f:
-        df["set"]=acc_set
-        acc_set+=1
-        acc_df = pd.concat([acc_df,df])
-    elif "Gyroscope" in f:
-        df["set"]=gyr_set
-        gyr_set+=1
-        gyr_df=pd.concat([gyr_df,df])
-
-# --------------------------------------------------------------
-# Working with datetimes
-# --------------------------------------------------------------
-
-acc_df.info()
-
-pd.to_datetime(df["epoch (ms)"],unit="ms")
-pd.to_datetime(df["time (01:00)"])
-
-acc_df.index= pd.to_datetime(acc_df["epoch (ms)"],unit="ms")
-gyr_df.index= pd.to_datetime(gyr_df["epoch (ms)"],unit="ms")
-
-del acc_df["epoch (ms)"]
-del acc_df["time (01:00)"]
-del acc_df["elapsed (s)"]
-
-del gyr_df["epoch (ms)"]
-del gyr_df["time (01:00)"]
-del gyr_df["elapsed (s)"]
-
-# --------------------------------------------------------------
-# Turn into function
+# main function
 # --------------------------------------------------------------
 
 files=glob("../../data/raw/MetaMotion/MetaMotion/*.csv")
@@ -97,7 +18,9 @@ def read_data_from_files(files):
 
     acc_set=1
     gyr_set=1
-
+    
+    # Extract features from filename
+    
     for f in files:
         participant = f.split("-")[0].split("\\")[-1].split("/")[-1]
         lable = f.split("-")[1]
@@ -117,7 +40,9 @@ def read_data_from_files(files):
             df["set"]=gyr_set
             gyr_set+=1
             gyr_df=pd.concat([gyr_df,df])
-                
+    
+    # Working with datetimes
+              
     acc_df.index= pd.to_datetime(acc_df["epoch (ms)"],unit="ms")
     gyr_df.index= pd.to_datetime(gyr_df["epoch (ms)"],unit="ms")
 
