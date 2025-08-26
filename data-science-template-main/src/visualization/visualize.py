@@ -146,7 +146,7 @@ participants =df["participant"].unique()
 
 for lable in lables:
     for participant in participants:
-        all_axis_df = df.query("lable == @lable").query("participant==@participant").reset_index()
+        combined_plot_df = df.query("lable == @lable").query("participant==@participant").reset_index()
 
         if len(combined_plot_df)>0:
             fig,ax = plt.subplots(nrows=2,sharex=True,figsize=(20,10))
