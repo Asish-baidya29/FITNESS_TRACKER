@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from DataTransformation import LowPassFilter, PrincipalComponentAnalysis
 from TemporalAbstraction import NumericalAbstraction
-
+from FrequencyAbstraction import FourierTransformation
 
 
 # Load data
@@ -109,26 +109,126 @@ df_square["gyr_r"]=np.sqrt(gyr_r)
 df_square
 
 
-# --------------------------------------------------------------
+
 # Temporal abstraction
-# --------------------------------------------------------------
+# --------------------------
 
+df_temporal = df_square.copy()
 
-# --------------------------------------------------------------
+NumAbs=NumericalAbstraction()
+
+predictor_col=predictor_col+["acc_r","gyr_r"]
+
+ws = int (1000/200)
+
+for col in predictor_col:
+    df_temporal=NumAbs.abstract_numerical(df_temporal,[col],ws,"mean")
+    df_temporal=NumAbs.abstract_numerical(df_temporal,[col],ws,"std")
+
+df_temporal_list =[]
+for s in df_temporal["set"].unique():
+    subset=df_temporal[df_temporal["set"]==s].copy()
+    for col in predictor_col:
+        subset=NumAbs.abstract_numerical(subset,[col],ws,"mean")
+        subset=NumAbs.abstract_numerical(subset,[col],ws,"std")
+    df_temporal_list.append(subset)
+df_temporal = pd.concat(df_temporal_list)
+
+df_temporal.info()
+
+subset[["acc_y","acc_y_temp_mean_ws_5","acc_y_temp_std_ws_5"]].plot()
+
 # Frequency features
-# --------------------------------------------------------------
+# --------------------------
 
+df_freq = df_temporal.copy().reset_index()
 
-# --------------------------------------------------------------
+FreqAbs = FourierTransformation()
+fs = int (1000/200)
+ws = int(2800/200)
+
+df_freq=FreqAbs.abstract_frequency(df_freq,["acc_y"],ws,fs)
+
+df_freq_list=[]
+for s in df_freq["set"].unique():
+    print(f"Applying Fourier transformation to set {s}")
+    subset = df_freq[df_freq["set"]==s].reset_index(drop=True).copy()
+    subset = FreqAbs.abstract_frequency(subset,predictor_col,ws,fs)
+    df_freq_list.append(subset)
+    
+df_freq=pd.concat(df_freq_list).set_index("epoch (ms)",drop=True)
+
 # Dealing with overlapping windows
-# --------------------------------------------------------------
+# --------------------------------------
 
+df_freq=df_freq.dropna()
 
-# --------------------------------------------------------------
+df_freq=df_freq.iloc[::2] # skip every 2 row
+
 # Clustering
-# --------------------------------------------------------------
+# ----------------
+
+from sklearn.cluster import KMeans
+
+df_cluster = df_freq.copy()
+cluster_col = ["acc_x", "acc_y", "acc_z"]
+
+subset = df_cluster[cluster_col]   # only once
+k_values = range(2, 10)
+inertias = []
+
+for k in k_values:
+    kmeans = KMeans(n_clusters=k, n_init=20, random_state=0)
+    cluster_labels = kmeans.fit_predict(subset)
+    inertias.append(kmeans.inertia_)
+
+# plot elbow graph 
+plt.figure(figsize=(10,10))
+plt.plot(k_values,inertias)
+plt.xlabel("k")
+plt.ylabel("sum of squared distances")
+plt.show()
+
+# our k =5 
+kmeans = KMeans(n_clusters=5,n_init=20,random_state=0)
+subset = df_cluster[cluster_col]
+df_cluster["cluster"]= kmeans.fit_predict(subset)
+
+df_cluster["cluster"].unique()
 
 
-# --------------------------------------------------------------
+# Plot clusters in 3D
+fig = plt.figure(figsize=(15, 15))
+ax = fig.add_subplot(projection="3d")
+
+for c in df_cluster["cluster"].unique():
+    subset = df_cluster[df_cluster["cluster"] == c]
+    ax.scatter(subset["acc_x"], subset["acc_y"], subset["acc_z"], label=f"Cluster {c}")
+
+ax.set_xlabel("X-axis")
+ax.set_ylabel("Y-axis")
+ax.set_zlabel("Z-axis")
+plt.legend()
+plt.show()
+
+
+# Plot accelerometer data by label (for comparison)
+
+fig = plt.figure(figsize=(15, 15))
+ax = fig.add_subplot(projection="3d")
+
+for l in df_cluster["lable"].unique():
+    subset = df_cluster[df_cluster["lable"] == l]
+    ax.scatter(subset["acc_x"], subset["acc_y"], subset["acc_z"], label=l)
+
+ax.set_xlabel("X-axis")
+ax.set_ylabel("Y-axis")
+ax.set_zlabel("Z-axis")
+plt.legend()
+plt.show()
+
+
 # Export dataset
-# --------------------------------------------------------------
+# ------------------------
+
+df_cluster.to_pickle("../../data/interim/02_data_features.pkl")
