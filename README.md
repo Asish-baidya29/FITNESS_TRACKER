@@ -31,7 +31,7 @@ Develop Python scripts for preprocessing, visualization, and modeling of acceler
 
 ## Features
 
-- Utilizes a feedforward neural network model, achieving 100% accuracy on the dataset.
+- Utilizes a feedforward neural network model, achieving 99% accuracy on the dataset.
 - Includes a custom algorithm to reliably count exercise repetitions.
 
 
